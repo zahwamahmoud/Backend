@@ -28,19 +28,31 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }))
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
+// Health check endpoint
+app.get('/api/v1/health', (req, res) => {
+    res.status(200).json({ status: 'UP', timestamp: new Date().toISOString() });
+});
+
 routes(app)
 
 // Serve Frontend static files from Frontend/dist
 const frontendPath = path.join(__dirname, '../Frontend/dist')
-app.use(express.static(frontendPath))
+import fs from 'fs'
 
-// Handle SPA routing: serve index.html for unknown non-API routes
-app.get('*', (req, res, next) => {
-    if (req.url.startsWith('/api')) {
-        return next();
-    }
-    res.sendFile(path.join(frontendPath, 'index.html'));
-});
+if (fs.existsSync(frontendPath)) {
+    console.log(`[Static] Serving frontend from: ${frontendPath}`);
+    app.use(express.static(frontendPath))
+
+    // Handle SPA routing: serve index.html for unknown non-API routes
+    app.get('*', (req, res, next) => {
+        if (req.url.startsWith('/api')) {
+            return next();
+        }
+        res.sendFile(path.join(frontendPath, 'index.html'));
+    });
+} else {
+    console.warn(`[Static] Frontend path not found: ${frontendPath}. SPA routing disabled.`);
+}
 
 // 404 for unknown routes (must be before error handler)
 app.use((req, res) => {
