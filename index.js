@@ -1,12 +1,13 @@
 import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import fs from 'fs'
 import { dbConnection } from './dataBase/dbConnection.js'
 import { routes } from './src/modules/index.routes.js'
 import { startBackupCron } from './src/backups/backup.cron.js'
-
 import cors from 'cors'
-import * as  dotenv from 'dotenv'
+import * as dotenv from 'dotenv'
+
 dotenv.config()
 
 const __filename = fileURLToPath(import.meta.url)
@@ -28,7 +29,11 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }))
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
-// Health check endpoint
+// Health check endpoints
+app.get('/', (req, res) => {
+    res.status(200).send('API is running');
+});
+
 app.get('/api/v1/health', (req, res) => {
     res.status(200).json({ status: 'UP', timestamp: new Date().toISOString() });
 });
@@ -37,7 +42,6 @@ routes(app)
 
 // Serve Frontend static files from Frontend/dist
 const frontendPath = path.join(__dirname, '../Frontend/dist')
-import fs from 'fs'
 
 if (fs.existsSync(frontendPath)) {
     console.log(`[Static] Serving frontend from: ${frontendPath}`);
