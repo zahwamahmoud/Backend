@@ -74,14 +74,20 @@ app.use((err, req, res, next) => {
 });
 
 async function bootstrap() {
-    await dbConnection()
-    startBackupCron()
-    app.listen(port, () => console.log(`API server listening on port ${port} (http://localhost:${port}/api/v1)`))
+    // Start listening immediately so deployment health checks pass
+    app.listen(port, () => {
+        console.log(`API server listening on port ${port} (http://localhost:${port}/api/v1)`);
+        console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+
+    // Connect to DB and start cron in background
+    dbConnection().then(() => {
+        startBackupCron();
+    }).catch((err) => {
+        console.error('Background initialization failed:', err);
+    });
 }
-bootstrap().catch((err) => {
-    console.error('Bootstrap failed:', err);
-    process.exit(1);
-})
+bootstrap();
 
 process.on('unhandledRejection', (err) => {
     console.error('unhandledRejection', err)
